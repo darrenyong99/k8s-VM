@@ -1,0 +1,60 @@
+────────────────────────────────────────────────────────────
+STAGE 0 : VM PREP & NETWORK SETUP
+────────────────────────────────────────────────────────────
+• Create two VMs (RHEL master, CentOS worker)
+• Use Bridge Adapter → ensure both can ping each other
+• Disable swap, configure sysctl for Kubernetes
+
+────────────────────────────────────────────────────────────
+STAGE 1 : INSTALLATION FLOW (USING KUBEADM)
+────────────────────────────────────────────────────────────
+MASTER NODE:
+   kubeadm init --pod-network-cidr=10.244.0.0/16
+        ↓
+   setup kubeconfig (~/.kube/config)
+        ↓
+   install CNI plugin (Flannel/Calico)
+        ↓
+   verify `kubectl get nodes`
+
+WORKER NODE:
+   kubeadm join <master-ip>:6443 --token <token> ...
+        ↓
+   verify node joins successfully
+        ↓
+   cluster is READY ✅
+
+────────────────────────────────────────────────────────────
+STAGE 2 : CLUSTER TEST & MANIFEST LEARNING (DEVOPS LAB)
+────────────────────────────────────────────────────────────
+  [Stage A]  Connectivity Test
+     → test network, nodes, pods running
+
+  [Stage B]  Pod
+     → create simple Nginx pod
+
+  [Stage C]  Service
+     → expose Pod via ClusterIP / NodePort
+
+  [Stage D]  Deployment
+     → manage replicas, rolling updates
+
+  [Stage E]  ConfigMap & Secret
+     → inject configs / sensitive data
+
+  [Stage F]  Persistent Volume & PVC
+     → attach and persist storage
+
+  [Stage G]  Namespace & RBAC
+     → isolate and secure resources
+
+  [Stage H]  Ingress (optional)
+     → route traffic between services
+
+────────────────────────────────────────────────────────────
+FINAL RESULT:
+────────────────────────────────────────────────────────────
+  🧩 Fully functional 2-node Kubernetes cluster
+  🧠 Able to practice all core manifest types
+  🔐 Learn DevOps workflow: Build → Deploy → Manage → Secure
+────────────────────────────────────────────────────────────
