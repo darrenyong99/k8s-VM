@@ -1,0 +1,162 @@
+⚙️ 1. System Prep on Worker Node
+# Disable swap
+sudo swapoff -a
+sudo sed -i '/swap/d' /etc/fstab
+
+# Disable SELinux
+sudo setenforce 0
+sudo sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
+
+# Load kernel modules
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+# Set sysctl params for K8s
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+sudo sysctl --system
+
+
+🧱 2. Ansible Configuration (Worker Specific)
+
+inventory.ini
+
+[workers]
+192.168.1.222 ansible_user=root
+
+
+join-worker.yml
+
+---
+- name: Setup Kubernetes Worker Node
+  hosts: workers
+  become: true
+  tasks:
+
+    - name: Install required dependencies
+      dnf:
+        name:
+          - curl
+          - conntrack-tools
+          - iproute
+          - iptables
+          - ebtables
+          - ethtool
+          - socat
+          - containerd
+        state: present
+
+    - name: Enable and start containerd
+      systemd:
+        name: containerd
+        enabled: yes
+        state: started
+
+    - name: Add Kubernetes repo
+      copy:
+        dest: /etc/yum.repos.d/kubernetes.repo
+        content: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
+          enabled=1
+          gpgcheck=0
+
+    - name: Install kubelet and kubeadm
+      dnf:
+        name:
+          - kubelet
+          - kubeadm
+        state: present
+
+    - name: Enable and start kubelet
+      systemd:
+        name: kubelet
+        enabled: yes
+        state: started
+
+
+Run it:
+
+ansible-playbook -i inventory.ini join-worker.yml
+
+🔁 3. Reset Old Cluster Data (if needed)
+
+When worker node failed or joined wrongly:
+
+sudo kubeadm reset -f
+sudo rm -rf /etc/cni/net.d
+sudo iptables -F && sudo ipvsadm --clear
+sudo systemctl restart containerd
+
+🔗 4. Join Cluster (from Master’s Join Command)
+
+Example:
+
+sudo kubeadm join 192.168.1.221:6443 \
+  --token hw68hv.nn5p6ozkynn9t9cb \
+  --discovery-token-ca-cert-hash sha256:2c6d8a11db974e8359cccfda83ef64ff5c3c6ec030d81f6cf0185270563cc218
+
+🧠 5. Worker Node Network Validation
+Check connectivity to master
+ping 192.168.1.221
+nc -vz 192.168.1.221 6443
+
+
+✅ Output should show:
+
+Connection to 192.168.1.221 6443 port [tcp/*] succeeded!
+
+
+If not:
+
+sudo systemctl stop firewalld
+sudo systemctl disable firewalld
+
+PORT CONNECTION FIREWALL ISSUE
+sudo setenforce 0
+sudo sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+
+
+Troubleshooting 
+# 1) Set a unique hostname (example: worker1)
+sudo hostnamectl set-hostname worker1
+
+# 2) Confirm hostname
+hostname
+# should show: worker1
+
+# 3) Clean any previous kubeadm state
+sudo kubeadm reset -f
+sudo rm -rf /etc/cni/net.d /var/lib/kubelet /var/lib/kubeadm /etc/kubernetes
+sudo iptables -F && sudo iptables -t nat -F && sudo iptables -t mangle -F && sudo iptables -X
+
+# 4) Ensure container runtime and kubelet are running
+sudo systemctl daemon-reexec
+sudo systemctl restart containerd
+sudo systemctl enable --now containerd kubelet
+
+# 5) Run the join command (use the token you generated on master)
+sudo kubeadm join 192.168.1.221:6443 --token hw68hv.nn5p6ozkynn9t9cb \
+  --discovery-token-ca-cert-hash sha256:2c6d8a11db974e8359cccfda83ef64ff5c3c6ec030d81f6cf0185270563cc218
+
+
+
+#Check Status kubelet (Worker)
+sudo systemctl status kubelet
+🧱 Common Issues
+Symptom	Cause	Fix
+❌ No route to host	Worker can’t reach master API port (6443)	Check firewall: nc -zv 192.168.1.221 6443
+⚠️ Node already exists	You re-joined the same node name	On master: kubectl delete node <old-node-name>
+❗ kubelet not starting	Containerd or swap issue	Ensure SystemdCgroup=true, swap is off
+💤 Node shows NotReady	CNI not configured	Reinstall flannel or calico CNI
+🧨 Port blocked	Firewall or SELinux	Disable or allow required ports
+🧾 Token expired	Token valid 24 hours	On master: kubeadm token create --print-join-command
