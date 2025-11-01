@@ -1,0 +1,14 @@
+ 1063  kubectl delete all -n lab-test -l app=mongo
+ 1064  kubectl delete all -n lab-test -l app=mongo-express
+ 1065  kubectl delete pvc mongo-pvc -n lab-test --ignore-not-found
+ 1066  kubectl delete pv mongo-pv --ignore-not-found
+ 1067  sudo rm -rf /mnt/data/mongo/*
+ 1068  sudo rm -rf /data/mongo/*
+ 1069  sudo mkdir -p /mnt/data/mongo
+ 1070  sudo chmod 777 /mnt/data/mongo
+ 1071  ls -la /mnt/data/mongo
+ 1072  nano mongo.yaml
+ 1073  nano mongo-express.yaml
+ 1074  kubectl apply -f mongo.yaml
+ 1075  kubectl apply -f mongo-express.yaml
+ 1076  kubectl get pods -n lab-test -w
