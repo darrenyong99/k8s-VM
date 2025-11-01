@@ -1,0 +1,98 @@
+────────────────────────────────────────────────────────────
+STAGE 0 : VM PREP & NETWORK SETUP
+────────────────────────────────────────────────────────────
+• Create two VMs (RHEL master, CentOS worker)
+• Use Bridge Adapter → ensure both can ping each other
+• Disable swap, configure sysctl for Kubernetes
+
+────────────────────────────────────────────────────────────
+STAGE 1 : INSTALLATION FLOW (USING KUBEADM)
+────────────────────────────────────────────────────────────
+MASTER NODE:
+   kubeadm init --pod-network-cidr=10.244.0.0/16
+        ↓
+   setup kubeconfig (~/.kube/config)
+        ↓sudo swapoff -a
+sudo sed -i '/swap/d' /etc/fstab
+
+   install CNI plugin (Flannel/Calico)
+        ↓
+   verify `kubectl get nodes`
+
+WORKER NODE:
+   kubeadm join <master-ip>:6443 --token <token> ...
+        ↓
+   verify node joins successfully
+        ↓
+   cluster is READY ✅
+
+────────────────────────────────────────────────────────────
+STAGE 2 : CLUSTER TEST & MANIFEST LEARNING (DEVOPS LAB)
+
+────────────────────────────────────────────────────────────
+
+[Stage A] Connectivity Test
+
+→ Test cluster network, nodes, and pod communication.
+→ Verify DNS and API accessibility (nslookup kubernetes.default).
+→ Confirm metrics and monitoring tools are functional.
+
+[Stage B] Pod
+
+→ Create a simple Nginx Pod to understand container basics.
+→ Test pod logs, port access, and lifecycle.
+→ Validate pod YAML structure and troubleshooting (kubectl describe pod).
+
+[Stage C] Service
+
+→ Expose Pods using ClusterIP and NodePort types.
+→ Test internal and external access (curl <NodeIP>:<port>).
+→ Understand service discovery and endpoint listing.
+
+[Stage D] Deployment
+
+→ Manage replicas and perform rolling updates.
+→ Practice image updates and rollback.
+→ Test application scaling and zero-downtime deployment.
+
+[Stage E] ConfigMap & Secret (MongoDB Integration)
+
+→ Inject non-sensitive configs via ConfigMap (e.g. MONGO_INITDB_DATABASE).
+→ Secure credentials using Kubernetes Secret (encoded username/password).
+→ Deploy MongoDB with envFrom linking to ConfigMap and Secret.
+→ Test connectivity between Nginx frontend ↔ MongoDB backend using internal service.
+→ Learn secret best practices:
+
+Use Base64-encoded values only (no plaintext in Git).
+
+Apply RBAC rules to restrict access to secrets.
+
+(Optional) Integrate with external secret managers (Vault, SOPS).
+
+[Stage F] Persistent Volume & PVC
+
+→ Configure PV and PVC for MongoDB data persistence.
+→ Mount storage (/data/db) inside MongoDB container.
+→ Verify data survives pod restarts.
+→ Explore hostPath vs dynamic storage class.
+
+[Stage G] Namespace & RBAC
+
+→ Isolate MongoDB in its own namespace (e.g., database).
+→ Create Role and RoleBinding for limited access (e.g., read-only).
+→ Learn how user/service accounts interact with RBAC policies.
+→ Test restricted access with different users.
+
+[Stage H] Ingress (Optional)
+
+→ Configure Ingress Controller (e.g. NGINX Ingress).
+→ Route external HTTP traffic to multiple backend services.
+→ Add virtual host routing (e.g. mylab.local).
+→ Use annotations for rewrite-target or TLS setup.
+────────────────────────────────────────────────────────────
+FINAL RESULT:
+────────────────────────────────────────────────────────────
+  🧩 Fully functional 2-node Kubernetes cluster
+  🧠 Able to practice all core manifest types
+  🔐 Learn DevOps workflow: Build → Deploy → Manage → Secure
+────────────────────────────────────────────────────────────

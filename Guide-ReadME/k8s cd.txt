@@ -1,0 +1,38 @@
+sudo systemctl restart kubelet
+
+
+kubectl get nodes -o wide
+kubectl get nodes A -o wide (#SHow ALL running)
+kubectl describe node <node-name>  #If any node shows NotReady, check
+kubectl get svc -A
+kubectl get pods -n kube-system -o wide
+kubectl get pod
+
+
+#Basic
+kubectl get pods -A
+kubectl describe pod <pod>
+kubectl logs <pod>
+kubectl exec -it <pod> -- /bin/sh #(kubectl exec -it nginx-pod -- /bin/bash)
+
+
+#Apply Manifest
+kubectl label pod nginx-pod app=nginx
+kubectl apply -f nginx-service.yaml
+kubectl describe svc nginx-service
+
+kubectl get deployment
+kubectl get pod
+kubectl get service
+kubectl describe service <**Images**>
+kebectl create deployment <**Images**>
+kubectl delete deployment <**Images**>
+kubectl describe pod <**Images**>
+
+kubectl get pod -o wide =
+kubectl get deployment <**Images**> -o yaml > nginx-result.yaml
+
+
+kubectl exec -it <**Images**> -- bin/bash
+kubectl apply -f <**File Name**>.yaml
+kubectl delete -f <**File Name**>.yaml
