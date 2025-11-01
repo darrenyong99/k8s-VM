@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: APP_COLOR
+          valueFrom:
+            configMapKeyRef:
+              name: nginx-config
+              key: APP_COLOR
+        - name: APP_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: nginx-config
+              key: APP_MODE
+        - name: USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: nginx-secret
+              key: USER_NAME
+        - name: USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nginx-secret
+              key: USER_PASSWORD
